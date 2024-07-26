@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="AnimData" load_steps=2 format=3 uid="uid://dt1os1ifck3qk"]
+
+[ext_resource type="Script" path="res://scripts/animation_data.gd" id="1_7eyxw"]
+
+[resource]
+script = ExtResource("1_7eyxw")
+anim_name = &"Run"
+begin_frame = 6
+end_frame = 13

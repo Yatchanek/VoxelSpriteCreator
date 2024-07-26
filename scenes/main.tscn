@@ -1,0 +1,181 @@
+[gd_scene load_steps=11 format=3 uid="uid://kxwk2nihdfv8"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_27sve"]
+[ext_resource type="PackedScene" uid="uid://bikfx47qi2mfv" path="res://scenes/voxel_sprite.tscn" id="1_cjnvg"]
+[ext_resource type="Texture2D" uid="uid://cqjpiiatn5fdk" path="res://spritesheet.png" id="3_m2tmb"]
+[ext_resource type="Resource" uid="uid://cc3ov4kyslisn" path="res://anim_data_resource/idle.tres" id="3_nvo1h"]
+[ext_resource type="Resource" uid="uid://dt1os1ifck3qk" path="res://anim_data_resource/run.tres" id="4_t83fu"]
+[ext_resource type="Resource" uid="uid://c1ar6xqwgsiws" path="res://anim_data_resource/attack.tres" id="5_7y3r0"]
+[ext_resource type="Resource" uid="uid://hvipxrfu3mor" path="res://anim_data_resource/die.tres" id="6_y8y5r"]
+[ext_resource type="Resource" uid="uid://cbkfaowrvfs3d" path="res://anim_data_resource/jump.tres" id="7_77wdj"]
+[ext_resource type="Resource" uid="uid://b7w8rvsktt6xx" path="res://anim_data_resource/climb.tres" id="7_njsjm"]
+
+[sub_resource type="Environment" id="Environment_xl6tq"]
+background_mode = 1
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_27sve")
+
+[node name="Marker3D" type="Marker3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="Marker3D"]
+transform = Transform3D(1, 0, 0, 0, 0.971751, 0.236007, 0, -0.236007, 0.971751, 0, 0.88732, 4.87786)
+size = 54.658
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_xl6tq")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 17.1472, 23.6675)
+light_energy = 11.53
+light_indirect_energy = 0.0
+omni_range = 1063.2
+omni_attenuation = 0.812252
+
+[node name="Pivot" type="Marker3D" parent="."]
+
+[node name="VoxelSprite" parent="Pivot" instance=ExtResource("1_cjnvg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
+animations = Array[Resource("res://scripts/animation_data.gd")]([ExtResource("3_nvo1h"), ExtResource("4_t83fu"), ExtResource("5_7y3r0"), ExtResource("6_y8y5r"), ExtResource("7_77wdj"), ExtResource("7_njsjm")])
+spritesheet = ExtResource("3_m2tmb")
+default_animation = &"Idle"
+h_frames = 6
+v_frames = 17
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/HUD"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 133.0
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/HUD/MarginContainer"]
+layout_mode = 2
+
+[node name="NextAnim" type="Button" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Next animation"
+
+[node name="PrevAnim" type="Button" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Prev. animation"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="FPSDown" type="Button" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+text = "-"
+
+[node name="Label" type="Label" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "FPS"
+horizontal_alignment = 1
+
+[node name="FPSUp" type="Button" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+text = "+"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="RotateSlower" type="Button" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+text = "-"
+
+[node name="Label" type="Label" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "Rotation Speed"
+
+[node name="RotateFaster" type="Button" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+text = "+"
+
+[node name="Label" type="Label" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Voxel Size"
+horizontal_alignment = 1
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer3"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "X"
+vertical_alignment = 1
+
+[node name="XSlider" type="HSlider" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 0.1
+max_value = 0.5
+step = 0.1
+value = 0.1
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer4"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Y"
+vertical_alignment = 1
+
+[node name="YSlider" type="HSlider" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer4"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 0.1
+max_value = 0.5
+step = 0.1
+value = 0.1
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer5"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Z"
+vertical_alignment = 1
+
+[node name="ZSlider" type="HSlider" parent="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer5"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 0.1
+max_value = 0.5
+step = 0.1
+value = 0.1
+
+[connection signal="pressed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/NextAnim" to="." method="_on_next_anim_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/PrevAnim" to="." method="_on_prev_anim_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer/FPSDown" to="." method="_on_fps_down_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer/FPSUp" to="." method="_on_fps_up_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer2/RotateSlower" to="." method="_on_rotate_slower_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer2/RotateFaster" to="." method="_on_rotate_faster_pressed"]
+[connection signal="value_changed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer3/XSlider" to="." method="_on_x_slider_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer4/YSlider" to="." method="_on_y_slider_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer5/ZSlider" to="." method="_on_z_slider_value_changed"]

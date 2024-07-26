@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="AnimData" load_steps=2 format=3 uid="uid://cbkfaowrvfs3d"]
+
+[ext_resource type="Script" path="res://scripts/animation_data.gd" id="1_6imdy"]
+
+[resource]
+script = ExtResource("1_6imdy")
+anim_name = &"Jump"
+begin_frame = 41
+end_frame = 48

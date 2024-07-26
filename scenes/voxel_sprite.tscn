@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://bikfx47qi2mfv"]
+
+[ext_resource type="Script" path="res://scripts/voxelsprite.gd" id="1_mq78t"]
+
+[node name="VoxelSprite" type="Node3D"]
+script = ExtResource("1_mq78t")
+
+[node name="Voxels" type="Node3D" parent="."]
