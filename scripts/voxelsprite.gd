@@ -4,6 +4,8 @@ class_name VoxelSprite
 
 
 @onready var voxels: Node3D = $Voxels
+@onready var multi_mesh: MultiMeshInstance3D = $Voxels/MultiMesh
+
 @export var animations : Array[AnimData] = []
 @export var spritesheet : Texture2D
 
@@ -20,21 +22,14 @@ class_name VoxelSprite
 var region_size : Vector2
 
 
-@export var voxel_size : Vector3 = Vector3(0.1, 0.1, 0.1) :
-	set(value):
-		var changed : bool = !voxel_size.is_equal_approx(value)
-		voxel_size = value
-		if changed:
-			destroy_voxels()
-			update_voxels(current_animation, anim_tick)
+@export var voxel_size : Vector3 = Vector3(0.1, 0.1, 0.1) 
 
 var voxel_grid : Dictionary = {}
-
-var materials : Dictionary = {}
 
 var animation_dict : Dictionary = {}
 
 var frame_images : Array[Image] = []
+var normals_images : Array[Image] = []
 
 var current_animation : AnimData
 var anim_tick : int = 0
@@ -45,13 +40,14 @@ var frame_duration : float = 0.0
 
 
 func _ready() -> void:
+	
 	if !spritesheet or h_frames == 0 or v_frames == 0:
+		set_process(false)
 		return
 
 	region_size = calculate_region_size()
 
 	create_images()
-	create_materials()
 	create_anim_dict()
 	
 	frame_duration = 1.0 / fps
@@ -110,55 +106,36 @@ func create_images():
 			
 			frame_images.append(frame_img)
 
-#Remove all the voxels			
-func destroy_voxels():
-	voxel_grid = {}
-	for voxel in voxels.get_children():
-		voxel.queue_free()
 	
 #Create the voxel representation of the image	
-func update_voxels(animation : AnimData, anim_tick : int):
-	var current_frame : int = anim_tick
+func update_voxels(animation : AnimData, _anim_tick : int):
+	var current_frame : int = _anim_tick
 	if !animation:
 		current_frame = 0
 	
-	#Get raw image data
-	var data : PackedByteArray = frame_images[current_frame].get_data()
+	var image : Image = frame_images[current_frame]
+	get_color_pixels(image)
 
-	for y in region_size.y:
-		for x in region_size.x:
-			#Check if a pixel is fully transparent
-			if data[(y * region_size.x + x) * 4 + 3] > 0:
-				var pixel_color : Color = Color(data[(y * region_size.x + x) * 4] / 255.0, (data[(y * region_size.x + x) * 4 + 1] ) / 255.0, (data[(y * region_size.x + x) * 4 + 2]) / 255.0, (data[(y * region_size.x + x) * 4 + 3]) / 255.0)
-
-				#Check if voxel already created. If not create it
-				if !voxel_grid.has(Vector2(x, y)):
-					var voxel : MeshInstance3D = MeshInstance3D.new()
-					var mesh : BoxMesh = voxel.mesh as BoxMesh
-					mesh = BoxMesh.new()
-					mesh.size = voxel_size
-					voxel.mesh = mesh
-					voxel.position = Vector3(x * voxel_size.x, -y * voxel_size.y, 0) + Vector3((-region_size.x / 2.0) * voxel_size.x, (region_size.y / 2.0) * voxel_size.y, 0)	
-					voxel_grid[Vector2(x, y)] = voxel
-					
-					mesh.material = materials[pixel_color]
-
-					voxel.show()
-					voxels.add_child(voxel)
-				
-				#If voxel exists, check if the color matches the image
-				#If not, update it	
-				else:
-					voxel_grid[Vector2(x, y)].show()
-					var mesh : BoxMesh = voxel_grid[Vector2(x, y)].mesh
-					if mesh.material != materials[pixel_color]:
-						mesh.material = materials[pixel_color]
-
-				
-					
-			#If pixel is tranparent and voxel exists, hide it
-			elif voxel_grid.has(Vector2(x, y)):
-				voxel_grid[Vector2(x, y)].hide()
+	multi_mesh.multimesh.instance_count = 0
+	multi_mesh.multimesh.use_custom_data = true
+	multi_mesh.multimesh.mesh.size = voxel_size
+	multi_mesh.multimesh.instance_count = voxel_grid.size()
+	
+	var instance_count : int = 0
+	for coord in voxel_grid.keys():
+		var xform : Transform3D = Transform3D(Basis.IDENTITY, Vector3(coord.x * voxel_size.x, -coord.y * voxel_size.y, 0) + Vector3((-region_size.x / 2.0) * voxel_size.x, (region_size.y / 2.0) * voxel_size.y, 0))
+		multi_mesh.multimesh.set_instance_transform(instance_count, xform)
+		multi_mesh.multimesh.set_instance_custom_data(instance_count, voxel_grid[coord])
+		instance_count += 1
+		
+	
+func get_color_pixels(img : Image):
+	voxel_grid = {}
+	for y in img.get_height():
+		for x in img.get_width():
+			var pixel_color = img.get_pixel(x, y)
+			if pixel_color.a > 0:
+				voxel_grid[Vector2(x, y)] = pixel_color
 
 #We do animation here						
 func _process(delta: float) -> void:
@@ -168,22 +145,4 @@ func _process(delta: float) -> void:
 		elapsed_time = 0
 		update_voxels(current_animation, anim_tick)
 
-#Create StandardMaterial for each pixel color
-#It is also possible to skip it and work with albedo_color directly,
-#It requires a small refactor of the update_voxels function
-func create_materials():
-	for img : Image in frame_images:
-		#Get raw image data
-		var data : PackedByteArray = img.get_data()
-		
-		for j in range(0, data.size() - 4):
-			if data[j + 4] > 0:
-				var pixel_color : Color = Color(data[j] / 255.0, data[j + 1] / 255.0, data[j + 2] / 255.0, data[j + 3] / 255.0)
-				
-				#Check if material already exists for this color
-				if !materials.has(pixel_color):
-					var material : StandardMaterial3D = StandardMaterial3D.new()
-					material.albedo_color = pixel_color
-					
-					materials[pixel_color] = material		
 

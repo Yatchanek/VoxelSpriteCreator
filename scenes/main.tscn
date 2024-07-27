@@ -1,8 +1,7 @@
-[gd_scene load_steps=11 format=3 uid="uid://kxwk2nihdfv8"]
+[gd_scene load_steps=10 format=3 uid="uid://kxwk2nihdfv8"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_27sve"]
 [ext_resource type="PackedScene" uid="uid://bikfx47qi2mfv" path="res://scenes/voxel_sprite.tscn" id="1_cjnvg"]
-[ext_resource type="Texture2D" uid="uid://cqjpiiatn5fdk" path="res://spritesheet.png" id="3_m2tmb"]
 [ext_resource type="Resource" uid="uid://cc3ov4kyslisn" path="res://anim_data_resource/idle.tres" id="3_nvo1h"]
 [ext_resource type="Resource" uid="uid://dt1os1ifck3qk" path="res://anim_data_resource/run.tres" id="4_t83fu"]
 [ext_resource type="Resource" uid="uid://c1ar6xqwgsiws" path="res://anim_data_resource/attack.tres" id="5_7y3r0"]
@@ -26,19 +25,15 @@ size = 54.658
 environment = SubResource("Environment_xl6tq")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 17.1472, 23.6675)
-light_energy = 11.53
-light_indirect_energy = 0.0
-omni_range = 1063.2
-omni_attenuation = 0.812252
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.536159, 1.15133)
+light_specular = 0.0
+omni_range = 34.858
 
 [node name="Pivot" type="Marker3D" parent="."]
 
 [node name="VoxelSprite" parent="Pivot" instance=ExtResource("1_cjnvg")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
-animations = Array[Resource("res://scripts/animation_data.gd")]([ExtResource("3_nvo1h"), ExtResource("4_t83fu"), ExtResource("5_7y3r0"), ExtResource("6_y8y5r"), ExtResource("7_77wdj"), ExtResource("7_njsjm")])
-spritesheet = ExtResource("3_m2tmb")
-default_animation = &"Idle"
+animations = Array[Resource("res://scripts/animation_data.gd")]([ExtResource("3_nvo1h"), ExtResource("4_t83fu"), ExtResource("5_7y3r0"), ExtResource("6_y8y5r"), ExtResource("7_njsjm"), ExtResource("7_77wdj")])
 h_frames = 6
 v_frames = 17
 
