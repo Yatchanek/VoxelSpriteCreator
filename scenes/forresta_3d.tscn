@@ -1,0 +1,15 @@
+[gd_scene load_steps=5 format=3 uid="uid://cjgatixivj2qy"]
+
+[ext_resource type="Script" path="res://scripts/forresta_3d.gd" id="1_4x2pr"]
+[ext_resource type="PackedScene" uid="uid://bikfx47qi2mfv" path="res://scenes/voxel_sprite.tscn" id="2_tphqg"]
+[ext_resource type="Resource" uid="uid://cc3ov4kyslisn" path="res://anim_data_resource/idle.tres" id="3_bwgsq"]
+[ext_resource type="Resource" uid="uid://dt1os1ifck3qk" path="res://anim_data_resource/run.tres" id="4_ra7ng"]
+
+[node name="Forresta3D" type="Node3D"]
+script = ExtResource("1_4x2pr")
+
+[node name="VoxelSprite" parent="." instance=ExtResource("2_tphqg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 2, 0)
+animations = Array[Resource("res://scripts/animation_data.gd")]([ExtResource("3_bwgsq"), ExtResource("4_ra7ng")])
+h_frames = 6
+v_frames = 17

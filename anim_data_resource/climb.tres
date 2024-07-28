@@ -5,5 +5,6 @@
 [resource]
 script = ExtResource("1_obreg")
 anim_name = &"Climb"
+looped = true
 begin_frame = 91
 end_frame = 98

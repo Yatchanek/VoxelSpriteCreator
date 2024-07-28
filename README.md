@@ -6,6 +6,8 @@ I tweaked the algorithm a bit and used MultiMesh, dropping the draw call count t
 
 I've included a simple demo scene. Because the sprite I used is not centered, the rotation will get weird if you change the X size of voxels.
 
+The spritesheet must be imported as uncompressed (Lossless, VRAM Uncompressed etc.) in order to work.
+
 Credits:
 Warrior sprite by Clembod.
 

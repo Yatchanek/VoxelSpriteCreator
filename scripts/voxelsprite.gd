@@ -71,10 +71,15 @@ func calculate_region_size() -> Vector2:
 func change_anim(anim_name : StringName):
 	if !animation_dict.has(anim_name):
 		return
-		
+	
+	if current_animation and current_animation.anim_name == anim_name:
+		return
+	
 	current_animation = animation_dict[anim_name]
 	anim_tick = current_animation.begin_frame
-
+	if !is_processing():
+		set_process(true)
+		
 #Next animation
 func next_anim():
 	if animations.size() < 2:
@@ -82,6 +87,8 @@ func next_anim():
 	var idx : int = animations.find(current_animation)
 	current_animation = animations[wrapi(idx + 1, 0, animations.size())]
 	anim_tick = current_animation.begin_frame
+	if !is_processing():
+		set_process(true)
 
 #Previous animation	
 func prev_anim():
@@ -90,7 +97,9 @@ func prev_anim():
 	var idx : int = animations.find(current_animation)
 	current_animation = animations[wrapi(idx - 1, 0, animations.size())]
 	anim_tick = current_animation.begin_frame	
-
+	if !is_processing():
+		set_process(true)
+		
 #Put animations in a directory to access them by name
 func create_anim_dict():
 	for anim : AnimData in animations:
@@ -128,7 +137,7 @@ func update_voxels(animation : AnimData, _anim_tick : int):
 		multi_mesh.multimesh.set_instance_custom_data(instance_count, voxel_grid[coord])
 		instance_count += 1
 		
-	
+#Filter out fully empty pixels
 func get_color_pixels(img : Image):
 	voxel_grid = {}
 	for y in img.get_height():
@@ -141,8 +150,11 @@ func get_color_pixels(img : Image):
 func _process(delta: float) -> void:
 	elapsed_time += delta
 	if elapsed_time >= frame_duration:
-		anim_tick = wrapi(anim_tick + 1, current_animation.begin_frame, current_animation.end_frame + 1)
-		elapsed_time = 0
-		update_voxels(current_animation, anim_tick)
+		if anim_tick == current_animation.end_frame and !current_animation.looped:
+			change_anim(default_animation)
+		else:
+			anim_tick = wrapi(anim_tick + 1, current_animation.begin_frame, current_animation.end_frame + 1)
+			elapsed_time = 0
+			update_voxels(current_animation, anim_tick)
 
 

@@ -5,5 +5,6 @@
 [resource]
 script = ExtResource("1_vs5u2")
 anim_name = &"Idle"
+looped = true
 begin_frame = 0
 end_frame = 5
