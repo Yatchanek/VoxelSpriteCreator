@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://lbmaro47gcso"]
+
+[ext_resource type="Shader" path="res://resources/voxel_sprite.gdshader" id="1_4lg8e"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_4lg8e")
+shader_parameter/brightness = 0.0
+shader_parameter/contrast = 1.2
+shader_parameter/saturation = 1.1
+shader_parameter/redVal = 1.0
+shader_parameter/greenVal = 1.0
+shader_parameter/blueVal = 1.0

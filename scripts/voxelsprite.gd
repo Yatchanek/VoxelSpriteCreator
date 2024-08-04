@@ -2,8 +2,6 @@
 extends Node3D
 class_name VoxelSprite
 
-var voxel_mesh = preload("res://resources/voxel_mesh.tres")
-
 @onready var voxels: Node3D = $Voxels
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 
@@ -51,6 +49,9 @@ func _ready() -> void:
 	mmesh.instance_count = 0
 	mmesh.transform_format = MultiMesh.TRANSFORM_3D
 	mmesh.use_custom_data = true
+	
+	var voxel_mesh : BoxMesh = BoxMesh.new()
+	voxel_mesh.material = load("res://resources/voxel_shader_material.tres")
 	mmesh.mesh = voxel_mesh
 	
 	multi_mesh_instance = MultiMeshInstance3D.new()
