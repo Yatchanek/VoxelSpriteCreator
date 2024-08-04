@@ -2,11 +2,11 @@
 extends Node3D
 class_name VoxelSprite
 
+var voxel_mesh = preload("res://resources/voxel_mesh.tres")
 
 @onready var voxels: Node3D = $Voxels
-@onready var multi_mesh: MultiMeshInstance3D = $Voxels/MultiMesh
+@onready var animation_player: AnimationPlayer = $AnimationPlayer
 
-@export var animations : Array[AnimData] = []
 @export var spritesheet : Texture2D
 
 @export var default_animation : StringName
@@ -17,50 +17,65 @@ class_name VoxelSprite
 @export var fps : int = 10 : 
 	set(value):
 		fps = clamp(value, 1, 30)
-		frame_duration = 1.0 / fps
+		animation_player.speed_scale = fps / 10.0
+		
+@export var voxel_size : Vector3 = Vector3(0.0, 0.0, 0.0) 
+
+@export var animated : bool = true
+
+var multi_mesh_instance: MultiMeshInstance3D
+
+var animations : PackedStringArray = []
 
 var region_size : Vector2
 
-
-@export var voxel_size : Vector3 = Vector3(0.1, 0.1, 0.1) 
-
 var voxel_grid : Dictionary = {}
 
-var animation_dict : Dictionary = {}
-
 var frame_images : Array[Image] = []
-var normals_images : Array[Image] = []
 
-var current_animation : AnimData
-var anim_tick : int = 0
+var current_animation : StringName
+
+@export var anim_frame : int = 0
+var last_frame : int = 0
+
+var loop_count : int = 0
 
 var elapsed_time : float = 0.0
 
-var frame_duration : float = 0.0
 
+signal animation_finished(_anim_name : StringName)
 
 func _ready() -> void:
+#Creating the multimesh in code to avoid buffer error in Vulkan renderer
+	var mmesh = MultiMesh.new()
+	mmesh.instance_count = 0
+	mmesh.transform_format = MultiMesh.TRANSFORM_3D
+	mmesh.use_custom_data = true
+	mmesh.mesh = voxel_mesh
+	
+	multi_mesh_instance = MultiMeshInstance3D.new()
+	multi_mesh_instance.multimesh = mmesh
+	
+	$Voxels.add_child.call_deferred(multi_mesh_instance)
 	
 	if !spritesheet or h_frames == 0 or v_frames == 0:
 		set_process(false)
 		return
 
+	set_process(animated)
+
 	region_size = calculate_region_size()
 
 	create_images()
-	create_anim_dict()
-	
-	frame_duration = 1.0 / fps
 
-	if !default_animation or !animation_dict.has(default_animation):
-		if animations.size() > 0:
-			current_animation = animations[0]
-		else:
-			set_process(false)
-	else:
-		change_anim(default_animation)
+	animations = animation_player.get_animation_list()
+	var r : int = animations.find("RESET")
+	animations.remove_at(r)
+	print(animations)
+	current_animation = default_animation
 	
-	update_voxels(current_animation, anim_tick)
+	update_voxels()
+	change_anim_to(default_animation)
 
 
 #Calculate the size of a single frame
@@ -68,43 +83,23 @@ func calculate_region_size() -> Vector2:
 	return Vector2(spritesheet.get_width() / h_frames, spritesheet.get_height() / v_frames)
 
 #Change animation to a given one
-func change_anim(anim_name : StringName):
-	if !animation_dict.has(anim_name):
-		return
-	
-	if current_animation and current_animation.anim_name == anim_name:
-		return
-	
-	current_animation = animation_dict[anim_name]
-	anim_tick = current_animation.begin_frame
-	if !is_processing():
-		set_process(true)
-		
-#Next animation
-func next_anim():
-	if animations.size() < 2:
-		return
-	var idx : int = animations.find(current_animation)
-	current_animation = animations[wrapi(idx + 1, 0, animations.size())]
-	anim_tick = current_animation.begin_frame
-	if !is_processing():
-		set_process(true)
+func change_anim_to(anim_name : StringName, speed_scale = 1.0):
+	animation_player.speed_scale = speed_scale
+	animation_player.play(anim_name)
+	current_animation = anim_name
 
-#Previous animation	
-func prev_anim():
-	if animations.size() < 2:
+func next_anim():
+	if animations.size() <= 1:
 		return
-	var idx : int = animations.find(current_animation)
-	current_animation = animations[wrapi(idx - 1, 0, animations.size())]
-	anim_tick = current_animation.begin_frame	
-	if !is_processing():
-		set_process(true)
-		
-#Put animations in a directory to access them by name
-func create_anim_dict():
-	for anim : AnimData in animations:
-		animation_dict[anim.anim_name] = anim
-		
+	var cur_anim = animations.find(current_animation)
+	change_anim_to(animations[wrapi(cur_anim + 1, 0, animations.size())])
+
+func prev_anim():
+	if animations.size() <= 1:
+		return
+	var cur_anim = animations.find(current_animation)
+	change_anim_to(animations[wrapi(cur_anim - 1, 0, animations.size())])
+	
 #Extract individual image data from the spritesheet and put them in an Array
 func create_images():
 	var spritesheet_image = spritesheet.get_image()
@@ -116,27 +111,23 @@ func create_images():
 			frame_images.append(frame_img)
 
 	
-#Create the voxel representation of the image	
-func update_voxels(animation : AnimData, _anim_tick : int):
-	var current_frame : int = _anim_tick
-	if !animation:
-		current_frame = 0
-	
-	var image : Image = frame_images[current_frame]
+#Create the voxel representation of the image
+func update_voxels():
+	var image : Image = frame_images[anim_frame]
 	get_color_pixels(image)
 
-	multi_mesh.multimesh.instance_count = 0
-	multi_mesh.multimesh.use_custom_data = true
-	multi_mesh.multimesh.mesh.size = voxel_size
-	multi_mesh.multimesh.instance_count = voxel_grid.size()
+	multi_mesh_instance.multimesh.instance_count = 0
+	multi_mesh_instance.multimesh.use_custom_data = true
+	multi_mesh_instance.multimesh.mesh.size = voxel_size
+	multi_mesh_instance.multimesh.instance_count = voxel_grid.size()
 	
 	var instance_count : int = 0
 	for coord in voxel_grid.keys():
 		var xform : Transform3D = Transform3D(Basis.IDENTITY, Vector3(coord.x * voxel_size.x, -coord.y * voxel_size.y, 0) + Vector3((-region_size.x / 2.0) * voxel_size.x, (region_size.y / 2.0) * voxel_size.y, 0))
-		multi_mesh.multimesh.set_instance_transform(instance_count, xform)
-		multi_mesh.multimesh.set_instance_custom_data(instance_count, voxel_grid[coord])
+		multi_mesh_instance.multimesh.set_instance_transform(instance_count, xform)
+		multi_mesh_instance.multimesh.set_instance_custom_data(instance_count, voxel_grid[coord])
 		instance_count += 1
-		
+	
 #Filter out fully empty pixels
 func get_color_pixels(img : Image):
 	voxel_grid = {}
@@ -146,15 +137,7 @@ func get_color_pixels(img : Image):
 			if pixel_color.a > 0:
 				voxel_grid[Vector2(x, y)] = pixel_color
 
-#We do animation here						
 func _process(delta: float) -> void:
-	elapsed_time += delta
-	if elapsed_time >= frame_duration:
-		if anim_tick == current_animation.end_frame and !current_animation.looped:
-			change_anim(default_animation)
-		else:
-			anim_tick = wrapi(anim_tick + 1, current_animation.begin_frame, current_animation.end_frame + 1)
-			elapsed_time = 0
-			update_voxels(current_animation, anim_tick)
-
-
+	if last_frame != anim_frame:
+		update_voxels()
+		last_frame = anim_frame

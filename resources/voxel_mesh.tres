@@ -1,0 +1,18 @@
+[gd_resource type="BoxMesh" load_steps=3 format=3 uid="uid://ch2vu6p1708cn"]
+
+[ext_resource type="Shader" path="res://resources/voxel_sprite.gdshader" id="1_fijch"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0dgn1"]
+render_priority = 0
+shader = ExtResource("1_fijch")
+shader_parameter/brightness = 0.0
+shader_parameter/contrast = 1.2
+shader_parameter/saturation = 1.1
+shader_parameter/redVal = 1.0
+shader_parameter/greenVal = 1.0
+shader_parameter/blueVal = 1.0
+
+[resource]
+resource_local_to_scene = true
+material = SubResource("ShaderMaterial_0dgn1")
+size = Vector3(0.1, 0.1, 0.2)
