@@ -37,14 +37,3 @@ func _on_rotate_slower_pressed() -> void:
 func _on_rotate_faster_pressed() -> void:
 	self.rotation_speed += PI * 0.1
 
-
-func _on_x_slider_value_changed(value: float) -> void:
-	voxel_sprite.voxel_size.x = value
-
-
-func _on_y_slider_value_changed(value: float) -> void:
-	voxel_sprite.voxel_size.y = value
-
-
-func _on_z_slider_value_changed(value: float) -> void:
-	voxel_sprite.voxel_size.z = value
