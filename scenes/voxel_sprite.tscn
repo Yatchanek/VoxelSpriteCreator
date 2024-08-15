@@ -6,6 +6,4 @@
 script = ExtResource("1_mq78t")
 default_animation = &"Idle"
 
-[node name="VoxelGrid" type="MeshInstance3D" parent="."]
-
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
