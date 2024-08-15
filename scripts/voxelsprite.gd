@@ -2,8 +2,9 @@
 extends Node3D
 class_name VoxelSprite
 
-@onready var voxels: Node3D = $Voxels
+
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
+@onready var voxel_grid: MeshInstance3D = $VoxelGrid
 
 @export var spritesheet : Texture2D
 
@@ -18,7 +19,7 @@ class_name VoxelSprite
 		if is_instance_valid(animation_player):
 			animation_player.speed_scale = fps / 10.0
 		
-@export var voxel_size : Vector3 = Vector3(0.0, 0.0, 0.0) 
+@export var voxel_size : Vector3 = Vector3(0.0, 0.0, 0.0)
 
 @export var animated : bool = true
 
@@ -26,38 +27,28 @@ var multi_mesh_instance: MultiMeshInstance3D
 
 var animations : PackedStringArray = []
 
-var region_size : Vector2i
-
-var pixel_cache_dictionary : Dictionary = {}
-
-var voxel_grid : Dictionary = {}
-
-var frame_images : Array[Image] = []
+var region_size : Vector2
 
 var current_animation : StringName
 
-@export var anim_frame : int = 0
+@export var anim_frame : int = 0 :
+	set(value):
+		anim_frame = value
+		if is_instance_valid(voxel_grid):
+			voxel_grid.material_override.set_shader_parameter("anim_frame", anim_frame)
+		
 var last_frame : int = 0
+
+var texture_width : int = 0
+
+var vertices : PackedVector3Array = []
+var indices : PackedInt32Array = []
+var uvs : PackedVector2Array = []
+var normals : PackedVector3Array = []
 
 signal animation_finished(_anim_name : StringName)
 
 func _ready() -> void:
-	var mmesh = MultiMesh.new()
-	var voxel_mesh : BoxMesh = BoxMesh.new()
-	voxel_mesh.material = load("res://resources/voxel_shader_material.tres")
-	voxel_mesh.size = voxel_size
-	voxel_mesh.resource_local_to_scene = true
-	mmesh.instance_count = 0
-	mmesh.transform_format = MultiMesh.TRANSFORM_3D
-	mmesh.use_custom_data = true
-	mmesh.mesh = voxel_mesh
-
-	
-	multi_mesh_instance = MultiMeshInstance3D.new()
-	multi_mesh_instance.multimesh = mmesh
-	
-	$Voxels.add_child.call_deferred(multi_mesh_instance)
-	
 	if !spritesheet or h_frames == 0 or v_frames == 0:
 		set_process(false)
 		return
@@ -65,34 +56,59 @@ func _ready() -> void:
 	set_process(animated)
 
 	region_size = calculate_region_size()
+	
+	#Index 0 - color texure, index 1 - positions texture
+	var images : Array[Image] = create_images()
 
-	create_images()
-	cache_pixels()
-
-	animations = animation_player.get_animation_list()
-	var r : int = animations.find("RESET")
-	if r >= 0:
-		animations.remove_at(r)
+	#Create cubes - the total amount is the highest number of solid pixels
+	#in all the animation frames
+	for i in texture_width:
+		create_cube(Vector3.ZERO, i)
 		
+	#Build the mesh
+	var surface_array = []
+	surface_array.resize(Mesh.ARRAY_MAX)
+	voxel_grid.mesh = ArrayMesh.new()
+	voxel_grid.mesh.clear_surfaces()
+	
+
+	surface_array[Mesh.ARRAY_VERTEX] = vertices
+	surface_array[Mesh.ARRAY_INDEX] = indices
+	surface_array[Mesh.ARRAY_TEX_UV] = uvs
+	surface_array[Mesh.ARRAY_NORMAL] = normals
+	
+	voxel_grid.mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface_array)
+	
+	#Configure the shader material
+	voxel_grid.material_override = ShaderMaterial.new()
+	voxel_grid.material_override.shader = load("res://resources/vertex_animation_shader.gdshader")
+	
+	var tex : ImageTexture = ImageTexture.create_from_image(images[0])
+	voxel_grid.material_override.set_shader_parameter("colors", tex)
+	
+	tex = ImageTexture.create_from_image(images[1])
+	voxel_grid.material_override.set_shader_parameter("positions", tex)
+	voxel_grid.material_override.set_shader_parameter("voxel_size", voxel_size)
+	voxel_grid.material_override.set_shader_parameter("x_resolution", region_size.x)
+	voxel_grid.material_override.set_shader_parameter("y_resolution", region_size.y)
+		
+	animations = animation_player.get_animation_list()
+	
+	#Remove the Reset animation from animation array
+	var idx = animations.find("RESET")
+	animations.remove_at(idx)
+	
 	current_animation = default_animation
 	
 	if current_animation:
 		change_anim_to(current_animation, fps / 10.0)
 		
-	update_voxels()
-
-
 
 #Calculate the size of a single frame
-func calculate_region_size() -> Vector2i:
+func calculate_region_size() -> Vector2:
 	return Vector2(spritesheet.get_width() / h_frames, spritesheet.get_height() / v_frames)
 
-#Change animation to a given one
-func change_anim_to(anim_name : StringName, speed_scale = 1.0):
-	animation_player.speed_scale = speed_scale
-	animation_player.play(anim_name)
-	current_animation = anim_name
-	
+
 func next_anim():
 	if animations.size() < 2:
 		return
@@ -105,49 +121,182 @@ func prev_anim():
 	var idx : int = animations.find(current_animation)
 	change_anim_to(animations[wrapi(idx - 1, 0, animations.size())])
 
-#Extract individual image data from the spritesheet and put them in an Array
-func create_images():
-	var spritesheet_image = spritesheet.get_image()
+#Change animation to a given one
+func change_anim_to(anim_name : StringName, speed_scale = 1.0):
+	animation_player.speed_scale = speed_scale
+	animation_player.play(anim_name)
+	current_animation = anim_name
+	
+#Create images for color and position offsets
+func create_images() -> Array[Image]:
+	var images : Array[Image] = []
+	var spritesheet_image : Image = spritesheet.get_image()
+	var longest_frame : int = 0
+	
+	var color_array : Array[PackedByteArray] = []
+	var pos_array : Array[PackedByteArray] = []
+	
+	#Loop through all the frames
 	for y in v_frames:
 		for x in h_frames:
 			var region_rect : Rect2 = Rect2(Vector2(x * region_size.x, y * region_size.y), region_size)
-			var frame_img : Image = spritesheet_image.get_region(region_rect)
+			var frame_img : Image = spritesheet_image.get_region(region_rect)			
 			
-			frame_images.append(frame_img)
-
-#Creating voxel grid data for each frame
-func cache_pixels():
-	for i in frame_images.size():
-		var img : Image = frame_images[i]
-		pixel_cache_dictionary[i] = get_color_pixels(img)
+			var color_data : PackedByteArray = []
+			var pos_data : PackedByteArray = []
+			var pixel_count : int = 0
+			
+			#Get raw frame data
+			var frame_data : PackedByteArray = frame_img.get_data()
+			
+			#Loop through pixels (4 bytes for 1 pixel)
+			#If the last byte is not equal to 0 (=solid pixel),
+			#Append the 4 bytes to color data
+			#And the position (calculated from pixel index in array) to position data
+			for idx in range(frame_data.size() - 1, -1, -4):
+				if frame_data[idx] != 0.0:
+					color_data.append_array(frame_data.slice(idx - 3, idx + 1))
+					pos_data.append_array([
+						((idx - 3) / 4) % int(region_size.x), ((idx - 3) / 4) / region_size.x, 0, 255
+					])
+			
 		
-#Create the voxel representation of the image
-func update_voxels():
-	var grid : Dictionary = pixel_cache_dictionary[anim_frame]
+			pixel_count = pos_data.size()
+			color_array.append(color_data)
+			pos_array.append(pos_data)
 	
-	multi_mesh_instance.multimesh.instance_count = 0
-	multi_mesh_instance.multimesh.use_custom_data = true
-	multi_mesh_instance.multimesh.instance_count = grid.size()
+	#Find the frame with most solid pixels		
+			if pixel_count > longest_frame:
+				longest_frame = pixel_count
 	
-	var instance_count : int = 0
-	
-	for coord in grid.keys():
-		var xform : Transform3D = Transform3D(Basis.IDENTITY, Vector3(coord.x * voxel_size.x, -coord.y * voxel_size.y, 0) + Vector3((-region_size.x / 2.0) * voxel_size.x, (region_size.y / 2.0) * voxel_size.y, 0))
-		multi_mesh_instance.multimesh.set_instance_transform(instance_count, xform)
-		multi_mesh_instance.multimesh.set_instance_custom_data(instance_count, grid[coord])
-		instance_count += 1
-	
-#Filter out fully empty pixels
-func get_color_pixels(img : Image) -> Dictionary:
-	var grid : Dictionary = {}
-	for y in img.get_height():
-		for x in img.get_width():
-			var pixel_color = img.get_pixel(x, y)
-			if pixel_color.a > 0:
-				grid[Vector2(x, y)] = pixel_color
-	return grid
+	#Set the texture width to the number of those pixels
+	texture_width = longest_frame / 4
 
-func _process(_delta: float) -> void:
-	if last_frame != anim_frame:
-		update_voxels()
-		last_frame = anim_frame
+	#Fill the shorter arrays with 0s, to match the texture width
+	#Then create the image
+	var raw_data : PackedByteArray = []
+	for arr in color_array:
+		arr.resize(longest_frame)
+		raw_data.append_array(arr)
+	
+	images.append(Image.create_from_data(longest_frame / 4, h_frames * v_frames, false, Image.FORMAT_RGBA8, raw_data))
+	
+	#Do the same for position values
+	raw_data = []
+	for arr in pos_array:
+		arr.resize(longest_frame)
+		raw_data.append_array(arr)
+	
+	images.append(Image.create_from_data(longest_frame / 4, h_frames * v_frames, false, Image.FORMAT_RGBA8, raw_data))
+	
+	return images
+
+func create_cube(start_pos : Vector3, cube_index : int):
+	#Front
+	create_quad(
+		start_pos, 
+		start_pos + Vector3(0, voxel_size.y, 0), 
+		start_pos + Vector3(voxel_size.x, voxel_size.y, 0),
+		start_pos + Vector3(voxel_size.x, 0, 0),
+	)
+	
+
+	
+	#Right
+	create_quad(
+		start_pos + Vector3(voxel_size.x, 0, 0),
+		start_pos + Vector3(voxel_size.x, voxel_size.y, 0),
+		start_pos + Vector3(voxel_size.x, voxel_size.y, -voxel_size.z),
+		start_pos + Vector3(voxel_size.x, 0, -voxel_size.z)		
+	)
+	
+
+	#Back
+	create_quad(
+		start_pos + Vector3(voxel_size.x, 0, -voxel_size.z),
+		start_pos + Vector3(voxel_size.x, voxel_size.y, -voxel_size.z),
+		start_pos + Vector3(0, voxel_size.y, -voxel_size.z), 
+		start_pos + Vector3(0, 0, -voxel_size.z), 
+	)
+	
+
+	#Left
+	create_quad(
+		start_pos + Vector3(0, 0, -voxel_size.z),
+		start_pos + Vector3(0, voxel_size.y, -voxel_size.z),
+		start_pos + Vector3(0, voxel_size.y, 0),
+		start_pos	
+	)
+	
+
+	#Top
+	create_quad(
+		start_pos + Vector3(0, voxel_size.y, 0),
+		start_pos + Vector3(0, voxel_size.y, -voxel_size.z),
+		start_pos + Vector3(voxel_size.x, voxel_size.y, -voxel_size.z),
+		start_pos + Vector3(voxel_size.x, voxel_size.y, 0)	
+	)
+	
+
+	#Bottom
+	create_quad(
+		start_pos + Vector3(0, 0, -voxel_size.z),
+		start_pos,
+		start_pos + Vector3(voxel_size.x, 0, 0),
+		start_pos + Vector3(voxel_size.x, 0, -voxel_size.z)	
+	)	
+	#
+	#var vert_count = vertices.size()
+	#vertices.append_array([
+		#start_pos, start_pos + Vector3(0, voxel_size.y, 0), 
+		#start_pos + Vector3(voxel_size.x, voxel_size.y, 0), start_pos + Vector3(voxel_size.x, 0, 0),
+		#
+		#start_pos + Vector3(0, 0, -voxel_size.z), start_pos + Vector3(0, voxel_size.y, -voxel_size.z), 
+		#start_pos + Vector3(voxel_size.x, voxel_size.y, -voxel_size.z), start_pos + Vector3(voxel_size.x, 0, -voxel_size.z)		
+	#])
+	#
+	#
+	#
+	#indices.append_array([
+		##Front
+		#vert_count + 0, vert_count + 1, vert_count + 2,
+		#vert_count + 0, vert_count + 2, vert_count + 3,
+		#
+		##Right
+		#vert_count + 3, vert_count + 2, vert_count + 6,
+		#vert_count + 3, vert_count + 6, vert_count + 7,
+		#
+		##Back
+		#vert_count + 7, vert_count + 6, vert_count + 5,
+		#vert_count + 7, vert_count + 5, vert_count + 4,
+		#
+		##Left
+		#vert_count + 4, vert_count + 5, vert_count + 1,
+		#vert_count + 4, vert_count + 1, vert_count + 0,
+		#
+		##Top
+		#vert_count + 1, vert_count + 5, vert_count + 6,
+		#vert_count + 1, vert_count + 6, vert_count + 2,
+		#
+		##Bottom
+		#vert_count + 4, vert_count + 0, vert_count + 3,
+		#vert_count + 4, vert_count + 3, vert_count + 7
+		#
+		#
+	#])
+	
+	for i in 24:
+		uvs.append(Vector2(cube_index, 0))
+		
+		
+func create_quad(a : Vector3, b: Vector3, c: Vector3, d: Vector3):
+	var vert_count = vertices.size()
+	vertices.append_array([a, b, c, d])
+	indices.append_array([vert_count, vert_count + 1, vert_count + 2, vert_count, vert_count + 2, vert_count + 3])
+	normals.append_array([
+		(d - a).cross((b - a)).normalized(),
+		(d - a).cross((b - a)).normalized(),
+		(d - a).cross((b - a)).normalized(),
+		(d - a).cross((b - a)).normalized()
+	])
+
