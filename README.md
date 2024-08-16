@@ -13,6 +13,9 @@ The spritesheet must be imported as uncompressed (Lossless, VRAM Uncompressed et
 The VoxelSprite can create textures upon loading, but it's more efficient to provide them befhrehand (in the demo example, it takes about 133ms to load when there are no textures, compared to about 30 with textures).
 I have provided a simple texture creator tool, but you can also use the VoxelSprite itself. As it's a @tool script, if provided with a spritesheet and corretly set h_frames and v_frames, it will generate textures when opened in the editor. You can then save them for later use.
 
+!!! Sometimes Godot automatically detects that the color/position texture will be used in 3D and sets it to VRAM Compressed. Reimport it as VRAM Uncompressed or Lossless, otherwise it may not display correctly.
+
+
 Credits:
 Warrior sprite by Clembod.
 
