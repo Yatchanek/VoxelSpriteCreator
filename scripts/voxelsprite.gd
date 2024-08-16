@@ -11,6 +11,7 @@ class_name VoxelSprite
 @export var color_texture : Texture2D
 @export var position_offset_texture : Texture2D
 
+@export_category("Animation settings")
 @export var default_animation : StringName
 
 @export var h_frames : int
@@ -21,7 +22,7 @@ class_name VoxelSprite
 		fps = clamp(value, 1, 30)
 		if is_instance_valid(animation_player):
 			animation_player.speed_scale = fps / 10.0
-		
+@export_category("Other settings")	
 @export var voxel_size : Vector3 = Vector3(0.04, 0.04, 0.08):
 	set(value):
 		if is_instance_valid(voxel_grid):
