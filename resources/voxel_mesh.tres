@@ -1,8 +1,0 @@
-[gd_resource type="BoxMesh" load_steps=2 format=3 uid="uid://ch2vu6p1708cn"]
-
-[ext_resource type="Material" uid="uid://lbmaro47gcso" path="res://resources/voxel_shader_material.tres" id="1_65b67"]
-
-[resource]
-resource_local_to_scene = true
-material = ExtResource("1_65b67")
-size = Vector3(0.1, 0.1, 0.2)

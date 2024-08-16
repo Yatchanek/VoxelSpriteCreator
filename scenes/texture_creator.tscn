@@ -1,0 +1,191 @@
+[gd_scene load_steps=3 format=3 uid="uid://cl5qg6mspu47w"]
+
+[ext_resource type="Script" path="res://scripts/texture_creator.gd" id="1_7lp5i"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xq2hb"]
+bg_color = Color(0.156863, 0.156863, 0.156863, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="Node" type="Node"]
+script = ExtResource("1_7lp5i")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Control" type="Control" parent="CanvasLayer"]
+texture_filter = 1
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Button" type="Button" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+mouse_default_cursor_shape = 2
+text = "Open source spritesheet"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(128, 0)
+layout_mode = 2
+text = "H frames"
+
+[node name="Hframes" type="SpinBox" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+min_value = 1.0
+value = 1.0
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(128, 0)
+layout_mode = 2
+text = "Vframes"
+
+[node name="Vframes" type="SpinBox" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+min_value = 1.0
+value = 1.0
+
+[node name="CreateButton" type="Button" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+disabled = true
+text = "Create textures"
+
+[node name="Quit" type="Button" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 10
+mouse_default_cursor_shape = 2
+text = "QUIT"
+
+[node name="Panel" type="Panel" parent="CanvasLayer/Control/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_xq2hb")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="SpritesheetView" type="TextureRect" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+expand_mode = 2
+stretch_mode = 4
+
+[node name="MarginContainer2" type="MarginContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 192)
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="ColorTexture" type="TextureRect" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 2
+stretch_mode = 4
+
+[node name="SaveColor" type="Button" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+disabled = true
+text = "Save texture"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="PositionTexture" type="TextureRect" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 2
+stretch_mode = 4
+
+[node name="SavePosition" type="Button" parent="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+disabled = true
+text = "Save texture"
+
+[node name="FileDialog" type="FileDialog" parent="CanvasLayer/Control"]
+title = "Select source spritesheet"
+size = Vector2i(454, 159)
+ok_button_text = "Open"
+file_mode = 3
+access = 2
+filters = PackedStringArray("*.png ; PNG Images")
+use_native_dialog = true
+
+[connection signal="pressed" from="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/Button" to="." method="_on_button_pressed"]
+[connection signal="value_changed" from="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/Hframes" to="." method="_on_hframes_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer2/Vframes" to="." method="_on_vframes_value_changed"]
+[connection signal="pressed" from="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/CreateButton" to="." method="_on_create_button_pressed"]
+[connection signal="pressed" from="CanvasLayer/Control/MarginContainer/HBoxContainer/VBoxContainer/Quit" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2/VBoxContainer/HBoxContainer/SaveColor" to="." method="_on_save_color_pressed"]
+[connection signal="pressed" from="CanvasLayer/Control/MarginContainer/HBoxContainer/Panel/VBoxContainer/MarginContainer2/VBoxContainer/HBoxContainer2/SavePosition" to="." method="_on_save_position_pressed"]
+[connection signal="file_selected" from="CanvasLayer/Control/FileDialog" to="." method="_on_file_dialog_file_selected"]

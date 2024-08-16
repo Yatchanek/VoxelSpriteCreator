@@ -5,5 +5,6 @@
 [node name="VoxelSprite" type="Node3D"]
 script = ExtResource("1_mq78t")
 default_animation = &"Idle"
+voxel_size = Vector3(0, 0, 0)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]

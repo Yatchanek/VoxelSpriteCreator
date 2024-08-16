@@ -6,7 +6,10 @@ class_name VoxelSprite
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var voxel_grid: MeshInstance3D = $VoxelGrid
 
+@export_category("Textures")
 @export var spritesheet : Texture2D
+@export var color_texture : Texture2D
+@export var position_offset_texture : Texture2D
 
 @export var default_animation : StringName
 
@@ -19,17 +22,21 @@ class_name VoxelSprite
 		if is_instance_valid(animation_player):
 			animation_player.speed_scale = fps / 10.0
 		
-@export var voxel_size : Vector3 = Vector3(0.0, 0.0, 0.0)
+@export var voxel_size : Vector3 = Vector3(0.04, 0.04, 0.08):
+	set(value):
+		if is_instance_valid(voxel_grid):
+			voxel_size = value
+			voxel_grid.material_override.set_shader_parameter("voxel_size", voxel_size)
 
 @export var animated : bool = true
-
-var multi_mesh_instance: MultiMeshInstance3D
 
 var animations : PackedStringArray = []
 
 var region_size : Vector2
 
 var current_animation : StringName
+
+var position_offset_scale : float
 
 @export var anim_frame : int = 0 :
 	set(value):
@@ -49,17 +56,28 @@ var normals : PackedVector3Array = []
 signal animation_finished(_anim_name : StringName)
 
 func _ready() -> void:
+	var time = Time.get_ticks_usec()
 	if !spritesheet or h_frames == 0 or v_frames == 0:
-		set_process(false)
+		return
+	
+	if !spritesheet and (!color_texture or !position_offset_texture):
 		return
 
-	set_process(animated)
 
 	region_size = calculate_region_size()
 	
-	#Index 0 - color texure, index 1 - positions texture
-	var images : Array[Image] = create_images()
+	#If textures for animation are not provided, create them
+	if !color_texture or !position_offset_texture:
+		#Index 0 - color texure, index 1 - positions texture
+		var images : Array[Image] = create_images()
+		color_texture = ImageTexture.create_from_image(images[0])
+		position_offset_texture = ImageTexture.create_from_image(images[1])
+		
 
+	#Width of the texture is used to calculate number of cubes
+	texture_width = color_texture.get_width()
+
+			
 	#Create cubes - the total amount is the highest number of solid pixels
 	#in all the animation frames
 	for i in texture_width:
@@ -83,11 +101,9 @@ func _ready() -> void:
 	voxel_grid.material_override = ShaderMaterial.new()
 	voxel_grid.material_override.shader = load("res://resources/vertex_animation_shader.gdshader")
 	
-	var tex : ImageTexture = ImageTexture.create_from_image(images[0])
-	voxel_grid.material_override.set_shader_parameter("colors", tex)
+	voxel_grid.material_override.set_shader_parameter("colors", color_texture)
 	
-	tex = ImageTexture.create_from_image(images[1])
-	voxel_grid.material_override.set_shader_parameter("positions", tex)
+	voxel_grid.material_override.set_shader_parameter("positions", position_offset_texture)
 	voxel_grid.material_override.set_shader_parameter("voxel_size", voxel_size)
 	voxel_grid.material_override.set_shader_parameter("x_resolution", region_size.x)
 	voxel_grid.material_override.set_shader_parameter("y_resolution", region_size.y)
@@ -103,7 +119,7 @@ func _ready() -> void:
 	if current_animation:
 		change_anim_to(current_animation, fps / 10.0)
 		
-
+	print(Time.get_ticks_usec() - time)
 #Calculate the size of a single frame
 func calculate_region_size() -> Vector2:
 	return Vector2(spritesheet.get_width() / h_frames, spritesheet.get_height() / v_frames)
@@ -157,7 +173,7 @@ func create_images() -> Array[Image]:
 				if frame_data[idx] != 0.0:
 					color_data.append_array(frame_data.slice(idx - 3, idx + 1))
 					pos_data.append_array([
-						((idx - 3) / 4) % int(region_size.x), ((idx - 3) / 4) / region_size.x, 0, 255
+						(((idx - 3) / 4) % int(region_size.x)), (((idx - 3) / 4) / region_size.x), 0, 255
 					])
 			
 		
@@ -168,9 +184,6 @@ func create_images() -> Array[Image]:
 	#Find the frame with most solid pixels		
 			if pixel_count > longest_frame:
 				longest_frame = pixel_count
-	
-	#Set the texture width to the number of those pixels
-	texture_width = longest_frame / 4
 
 	#Fill the shorter arrays with 0s, to match the texture width
 	#Then create the image
@@ -194,96 +207,57 @@ func create_images() -> Array[Image]:
 func create_cube(start_pos : Vector3, cube_index : int):
 	#Front
 	create_quad(
-		start_pos, 
-		start_pos + Vector3(0, voxel_size.y, 0), 
-		start_pos + Vector3(voxel_size.x, voxel_size.y, 0),
-		start_pos + Vector3(voxel_size.x, 0, 0),
+		start_pos + Vector3(-0.5, -0.5, 0.5),
+		start_pos + Vector3(-0.5, 0.5, 0.5), 
+		start_pos + Vector3(0.5, 0.5, 0.5),
+		start_pos + Vector3(0.5, -0.5, 0.5),
 	)
 	
 
 	
 	#Right
 	create_quad(
-		start_pos + Vector3(voxel_size.x, 0, 0),
-		start_pos + Vector3(voxel_size.x, voxel_size.y, 0),
-		start_pos + Vector3(voxel_size.x, voxel_size.y, -voxel_size.z),
-		start_pos + Vector3(voxel_size.x, 0, -voxel_size.z)		
+		start_pos + Vector3(0.5, -0.5, 0.5),
+		start_pos + Vector3(0.5, 0.5, 0.5),
+		start_pos + Vector3(0.5, 0.5, -0.5),
+		start_pos + Vector3(0.5, -0.5, -0.5)		
 	)
 	
 
 	#Back
 	create_quad(
-		start_pos + Vector3(voxel_size.x, 0, -voxel_size.z),
-		start_pos + Vector3(voxel_size.x, voxel_size.y, -voxel_size.z),
-		start_pos + Vector3(0, voxel_size.y, -voxel_size.z), 
-		start_pos + Vector3(0, 0, -voxel_size.z), 
+		start_pos + Vector3(0.5, -0.5, -0.5),
+		start_pos + Vector3(0.5, 0.5, -0.5),
+		start_pos + Vector3(-0.5, 0.5, -0.5), 
+		start_pos + Vector3(-0.5, -0.5, -0.5), 
 	)
 	
 
 	#Left
 	create_quad(
-		start_pos + Vector3(0, 0, -voxel_size.z),
-		start_pos + Vector3(0, voxel_size.y, -voxel_size.z),
-		start_pos + Vector3(0, voxel_size.y, 0),
-		start_pos	
+		start_pos + Vector3(-0.5, -0.5, -0.5),
+		start_pos + Vector3(-0.5, 0.5, -0.5),
+		start_pos + Vector3(-0.5, 0.5, 0.5),
+		start_pos + Vector3(-0.5, -0.5, 0.5)	
 	)
 	
 
 	#Top
 	create_quad(
-		start_pos + Vector3(0, voxel_size.y, 0),
-		start_pos + Vector3(0, voxel_size.y, -voxel_size.z),
-		start_pos + Vector3(voxel_size.x, voxel_size.y, -voxel_size.z),
-		start_pos + Vector3(voxel_size.x, voxel_size.y, 0)	
+		start_pos + Vector3(-0.5, 0.5, 0.5),
+		start_pos + Vector3(-0.5, 0.5, -0.5),
+		start_pos + Vector3(0.5, 0.5, -0.5),
+		start_pos + Vector3(0.5, 0.5, 0.5)	
 	)
 	
 
 	#Bottom
 	create_quad(
-		start_pos + Vector3(0, 0, -voxel_size.z),
-		start_pos,
-		start_pos + Vector3(voxel_size.x, 0, 0),
-		start_pos + Vector3(voxel_size.x, 0, -voxel_size.z)	
+		start_pos + Vector3(-0.5, -0.5, -0.5),
+		start_pos + Vector3(-0.5, -0.5, 0.5),
+		start_pos + Vector3(0.5, -0.5, 0.5),
+		start_pos + Vector3(0.5, -0.5, -0.5)	
 	)	
-	#
-	#var vert_count = vertices.size()
-	#vertices.append_array([
-		#start_pos, start_pos + Vector3(0, voxel_size.y, 0), 
-		#start_pos + Vector3(voxel_size.x, voxel_size.y, 0), start_pos + Vector3(voxel_size.x, 0, 0),
-		#
-		#start_pos + Vector3(0, 0, -voxel_size.z), start_pos + Vector3(0, voxel_size.y, -voxel_size.z), 
-		#start_pos + Vector3(voxel_size.x, voxel_size.y, -voxel_size.z), start_pos + Vector3(voxel_size.x, 0, -voxel_size.z)		
-	#])
-	#
-	#
-	#
-	#indices.append_array([
-		##Front
-		#vert_count + 0, vert_count + 1, vert_count + 2,
-		#vert_count + 0, vert_count + 2, vert_count + 3,
-		#
-		##Right
-		#vert_count + 3, vert_count + 2, vert_count + 6,
-		#vert_count + 3, vert_count + 6, vert_count + 7,
-		#
-		##Back
-		#vert_count + 7, vert_count + 6, vert_count + 5,
-		#vert_count + 7, vert_count + 5, vert_count + 4,
-		#
-		##Left
-		#vert_count + 4, vert_count + 5, vert_count + 1,
-		#vert_count + 4, vert_count + 1, vert_count + 0,
-		#
-		##Top
-		#vert_count + 1, vert_count + 5, vert_count + 6,
-		#vert_count + 1, vert_count + 6, vert_count + 2,
-		#
-		##Bottom
-		#vert_count + 4, vert_count + 0, vert_count + 3,
-		#vert_count + 4, vert_count + 3, vert_count + 7
-		#
-		#
-	#])
 	
 	for i in 24:
 		uvs.append(Vector2(cube_index, 0))
@@ -293,10 +267,8 @@ func create_quad(a : Vector3, b: Vector3, c: Vector3, d: Vector3):
 	var vert_count = vertices.size()
 	vertices.append_array([a, b, c, d])
 	indices.append_array([vert_count, vert_count + 1, vert_count + 2, vert_count, vert_count + 2, vert_count + 3])
-	normals.append_array([
-		(d - a).cross((b - a)).normalized(),
-		(d - a).cross((b - a)).normalized(),
-		(d - a).cross((b - a)).normalized(),
-		(d - a).cross((b - a)).normalized()
-	])
+	
+	#Normal perpendicular to face
+	var normal : Vector3 = (d - a).cross((b - a)).normalized()
+	normals.append_array([normal, normal, normal, normal])
 

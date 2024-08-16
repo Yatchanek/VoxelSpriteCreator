@@ -24,11 +24,11 @@ void vertex() {
 	vec4 color = texture(colors, vec2(UV.x * x_pixel_size + 0.5 * x_pixel_size, (anim_frame + 0.5) * y_pixel_size));
 
 	vec3 new_vertex = 
-	vec3(-0.5 * x_resolution * voxel_size.x + position.x * voxel_size.x * scale, 0.5 * y_resolution * voxel_size.y - position.y * voxel_size.y * scale, 0.5 * voxel_size.z + position.z * voxel_size.z * scale
-	);
-	
+	vec3(- 0.5 * x_resolution + position.x * scale, 0.5 * y_resolution -position.y * scale, position.z * scale);
 	
 	VERTEX += new_vertex;
+	VERTEX *= voxel_size;
+	
 	VERTEX *= color.a;
 	COLOR = color;
 }
@@ -39,8 +39,3 @@ void fragment() {
 	
 	ALBEDO = COLOR.rgb * 5.0;
 }
-
-//void light() {
-	// Called for every pixel for every light affecting the material.
-	// Uncomment to replace the default light processing function with this one.
-//}
