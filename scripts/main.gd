@@ -1,7 +1,7 @@
 extends Node3D
 
 @onready var pivot: Marker3D = $Pivot
-@onready var voxel_sprite: VoxelSprite = $Pivot/VoxelSprite as VoxelSprite
+@onready var voxel_sprite: VoxelSpriteMultiMesh = $Pivot/VoxelSpriteMultiMesh as VoxelSpriteMultiMesh
 @onready var x_slider: HSlider = $CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer3/XSlider
 @onready var y_slider: HSlider = $CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer4/YSlider
 @onready var z_slider: HSlider = $CanvasLayer/HUD/MarginContainer/VBoxContainer/HBoxContainer5/ZSlider

@@ -4,7 +4,7 @@ It takes a spritesheet, extracts the data and creates a 3D representation. The V
 
 Thanks to u/DNCGame from Reddit, I switched to vertex animation. First, the VoxelSprite creates two textures: one containing positon offsets of the pixels (only solid ones), the other containing colors of those pixels for each frame. Then, I create ArrayMesh with a number of cubes corresponding to the highest number of pixels in all the frames. The shader reads the positions and colors for each cube, using the UV.x channel. 
 
-This method generates more primitive to draw than the earlier MultiMesh approach (the included sprite requires about 12500 primitives - not something a modern GPU cannot handle), but moving and coloring the cubes via GPU should be faster than doing it in GDScript for each instance of the MultiMesh.
+I've introduced MultiMesh again instead of creating the mesh in code. It still has more primitives than my previous pure MultiMesh approach, as the maximum number of cubes needed is generated (the included sprite requires about 12500 primitives - not something a modern GPU cannot handle), but moving and coloring the cubes via GPU should be faster than doing it in GDScript for each instance of the MultiMesh. Also, using MultiMesh is much faster than generating the mesh in code.
 
 I've included a simple demo scene. 
 

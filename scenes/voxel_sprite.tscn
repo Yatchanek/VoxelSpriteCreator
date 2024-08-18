@@ -1,10 +1,14 @@
-[gd_scene load_steps=2 format=3 uid="uid://bikfx47qi2mfv"]
+[gd_scene load_steps=3 format=3 uid="uid://bikfx47qi2mfv"]
 
 [ext_resource type="Script" path="res://scripts/voxelsprite.gd" id="1_mq78t"]
+[ext_resource type="Texture2D" uid="uid://cqjpiiatn5fdk" path="res://resources/spritesheet.png" id="2_1aj27"]
 
 [node name="VoxelSprite" type="Node3D"]
 script = ExtResource("1_mq78t")
-default_animation = &"Idle"
-voxel_size = Vector3(0, 0, 0)
+spritesheet = ExtResource("2_1aj27")
+h_frames = 6
+v_frames = 17
+
+[node name="VoxelGrid" type="MeshInstance3D" parent="."]
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]

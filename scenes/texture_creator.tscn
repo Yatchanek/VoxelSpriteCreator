@@ -173,7 +173,7 @@ disabled = true
 text = "Save texture"
 
 [node name="FileDialog" type="FileDialog" parent="CanvasLayer/Control"]
-title = "Select source spritesheet"
+title = "Open a File or Directory"
 size = Vector2i(454, 159)
 ok_button_text = "Open"
 file_mode = 3
