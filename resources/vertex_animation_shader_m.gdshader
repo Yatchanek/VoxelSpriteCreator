@@ -27,7 +27,7 @@ void vertex() {
 	vec3(- 0.5 * x_resolution + position.x * scale, 0.5 * y_resolution -position.y * scale, position.z * scale);
 	
 	VERTEX += new_vertex;
-	//VERTEX *= voxel_size;
+	VERTEX *= voxel_size;
 	
 	VERTEX *= color.a;
 	COLOR = color;
