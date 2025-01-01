@@ -2,7 +2,6 @@
 extends Node3D
 class_name VoxelSpriteMultiMesh
 
-
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var voxel_grid: MultiMeshInstance3D = $VoxelGrid
 
@@ -33,7 +32,7 @@ class_name VoxelSpriteMultiMesh
 
 var animations : PackedStringArray = []
 
-var region_size : Vector2
+var region_size : Vector2i
 
 var current_animation : StringName
 
@@ -45,14 +44,7 @@ var position_offset_scale : float
 		if is_instance_valid(voxel_grid):
 			voxel_grid.material_override.set_shader_parameter("anim_frame", anim_frame)
 		
-var last_frame : int = 0
-
 var texture_width : int = 0
-
-var vertices : PackedVector3Array = []
-var indices : PackedInt32Array = []
-var uvs : PackedVector2Array = []
-var normals : PackedVector3Array = []
 
 signal animation_finished(_anim_name : StringName)
 
@@ -69,8 +61,8 @@ func _ready() -> void:
 		color_texture = ImageTexture.create_from_image(images[0])
 		position_offset_texture = ImageTexture.create_from_image(images[1])
 		
-
-	#Width of the texture is used to calculate number of cubes
+	#Width of the texture is used to calculate the number of cubes needed
+	#It corresponds to the highest number of solid pixels in all frames
 	texture_width = color_texture.get_width()
 		
 	#Configure Multimesh
@@ -87,7 +79,6 @@ func _ready() -> void:
 	voxel_grid.material_override.shader = load("res://resources/vertex_animation_shader_m.gdshader")
 
 	voxel_grid.material_override.set_shader_parameter("colors", color_texture)
-	
 	voxel_grid.material_override.set_shader_parameter("positions", position_offset_texture)
 	voxel_grid.material_override.set_shader_parameter("voxel_size", voxel_size)
 	voxel_grid.material_override.set_shader_parameter("x_resolution", region_size.x)
@@ -103,30 +94,9 @@ func _ready() -> void:
 	
 	if current_animation:
 		change_anim_to(current_animation, fps / 10.0)
-		
-#Calculate the size of a single frame
-func calculate_region_size() -> Vector2:
-	return Vector2(spritesheet.get_width() / h_frames, spritesheet.get_height() / v_frames)
 
 
-func next_anim():
-	if animations.size() < 2:
-		return
-	var idx : int = animations.find(current_animation)
-	change_anim_to(animations[wrapi(idx + 1, 0, animations.size())])
-
-func prev_anim():
-	if animations.size() < 2:
-		return
-	var idx : int = animations.find(current_animation)
-	change_anim_to(animations[wrapi(idx - 1, 0, animations.size())])
-
-#Change animation to a given one
-func change_anim_to(anim_name : StringName, speed_scale = 1.0):
-	animation_player.speed_scale = speed_scale
-	animation_player.play(anim_name)
-	current_animation = anim_name
-	
+				
 #Create images for color and position offsets
 func create_images() -> Array[Image]:
 	var images : Array[Image] = []
@@ -152,14 +122,13 @@ func create_images() -> Array[Image]:
 			#Loop through pixels (4 bytes for 1 pixel)
 			#If the last byte is not equal to 0 (=solid pixel),
 			#Append the 4 bytes to color data
-			#And the position (calculated from pixel index in array) to position data
-			for idx in range(frame_data.size() - 1, -1, -4):
-				if frame_data[idx] != 0.0:
-					color_data.append_array(frame_data.slice(idx - 3, idx + 1))
+			#And the position (calculated from pixel index in array) to position data		
+			for idx in range(0, frame_data.size(), 4):
+				if frame_data[idx + 3] != 0.0:
+					color_data.append_array(frame_data.slice(idx, idx + 4))
 					pos_data.append_array([
-						(((idx - 3) / 4) % int(region_size.x)), (((idx - 3) / 4) / region_size.x), 0, 255
+						(idx / 4) % region_size.x, (idx / 4) / region_size.x, 0, 255
 					])
-			
 		
 			pixel_count = pos_data.size()
 			color_array.append(color_data)
@@ -172,87 +141,38 @@ func create_images() -> Array[Image]:
 	#Fill the shorter arrays with 0s, to match the texture width
 	#Then create the image
 	var raw_data : PackedByteArray = []
-	for arr in color_array:
-		arr.resize(longest_frame)
-		raw_data.append_array(arr)
-	
+	var raw_data_pos : PackedByteArray = []
+	for i in color_array.size():
+		color_array[i].resize(longest_frame)
+		pos_array[i].resize(longest_frame)
+		raw_data.append_array(color_array[i])
+		raw_data_pos.append_array(pos_array[i])
+
+
 	images.append(Image.create_from_data(longest_frame / 4, h_frames * v_frames, false, Image.FORMAT_RGBA8, raw_data))
-	
-	#Do the same for position values
-	raw_data = []
-	for arr in pos_array:
-		arr.resize(longest_frame)
-		raw_data.append_array(arr)
-	
-	images.append(Image.create_from_data(longest_frame / 4, h_frames * v_frames, false, Image.FORMAT_RGBA8, raw_data))
+	images.append(Image.create_from_data(longest_frame / 4, h_frames * v_frames, false, Image.FORMAT_RGBA8, raw_data_pos))
 	
 	return images
-
-func create_cube(start_pos : Vector3, cube_index : int):
-	#Front
-	create_quad(
-		start_pos + Vector3(-0.5, -0.5, 0.5),
-		start_pos + Vector3(-0.5, 0.5, 0.5), 
-		start_pos + Vector3(0.5, 0.5, 0.5),
-		start_pos + Vector3(0.5, -0.5, 0.5),
-	)
-	
-
-	
-	#Right
-	create_quad(
-		start_pos + Vector3(0.5, -0.5, 0.5),
-		start_pos + Vector3(0.5, 0.5, 0.5),
-		start_pos + Vector3(0.5, 0.5, -0.5),
-		start_pos + Vector3(0.5, -0.5, -0.5)		
-	)
-	
-
-	#Back
-	create_quad(
-		start_pos + Vector3(0.5, -0.5, -0.5),
-		start_pos + Vector3(0.5, 0.5, -0.5),
-		start_pos + Vector3(-0.5, 0.5, -0.5), 
-		start_pos + Vector3(-0.5, -0.5, -0.5), 
-	)
-	
-
-	#Left
-	create_quad(
-		start_pos + Vector3(-0.5, -0.5, -0.5),
-		start_pos + Vector3(-0.5, 0.5, -0.5),
-		start_pos + Vector3(-0.5, 0.5, 0.5),
-		start_pos + Vector3(-0.5, -0.5, 0.5)	
-	)
-	
-
-	#Top
-	create_quad(
-		start_pos + Vector3(-0.5, 0.5, 0.5),
-		start_pos + Vector3(-0.5, 0.5, -0.5),
-		start_pos + Vector3(0.5, 0.5, -0.5),
-		start_pos + Vector3(0.5, 0.5, 0.5)	
-	)
-	
-
-	#Bottom
-	create_quad(
-		start_pos + Vector3(-0.5, -0.5, -0.5),
-		start_pos + Vector3(-0.5, -0.5, 0.5),
-		start_pos + Vector3(0.5, -0.5, 0.5),
-		start_pos + Vector3(0.5, -0.5, -0.5)	
-	)	
-	
-	for i in 24:
-		uvs.append(Vector2(cube_index, 0))
 		
-		
-func create_quad(a : Vector3, b: Vector3, c: Vector3, d: Vector3):
-	var vert_count = vertices.size()
-	vertices.append_array([a, b, c, d])
-	indices.append_array([vert_count, vert_count + 1, vert_count + 2, vert_count, vert_count + 2, vert_count + 3])
-	
-	#Normal perpendicular to face
-	var normal : Vector3 = (d - a).cross((b - a)).normalized()
-	normals.append_array([normal, normal, normal, normal])
+#Calculate the size of a single frame
+func calculate_region_size() -> Vector2i:
+	return Vector2i(spritesheet.get_width() / h_frames, spritesheet.get_height() / v_frames)
 
+
+func next_anim():
+	if animations.size() < 2:
+		return
+	var idx : int = animations.find(current_animation)
+	change_anim_to(animations[wrapi(idx + 1, 0, animations.size())], fps / 10)
+
+func prev_anim():
+	if animations.size() < 2:
+		return
+	var idx : int = animations.find(current_animation)
+	change_anim_to(animations[wrapi(idx - 1, 0, animations.size())], fps / 10)
+
+#Change animation to a given one
+func change_anim_to(anim_name : StringName, speed_scale = 1.0):
+	animation_player.speed_scale = speed_scale
+	animation_player.play(anim_name)
+	current_animation = anim_name

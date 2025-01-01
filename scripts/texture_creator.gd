@@ -28,6 +28,7 @@ func calculate_region_size() -> Vector2i:
 	return Vector2i(spritesheet.get_width() / h_frames, spritesheet.get_height() / v_frames)
 
 func create_images() -> void:
+	var images : Array[Image] = []
 	var spritesheet_image : Image = spritesheet.get_image()
 	var longest_frame : int = 0
 	
@@ -50,14 +51,13 @@ func create_images() -> void:
 			#Loop through pixels (4 bytes for 1 pixel)
 			#If the last byte is not equal to 0 (=solid pixel),
 			#Append the 4 bytes to color data
-			#And the position (calculated from pixel index in array) to position data
-			for idx in range(frame_data.size() - 1, -1, -4):
+			#And the position (calculated from pixel index in array) to position data		
+			for idx in range(0, frame_data.size(), 4):
 				if frame_data[idx] != 0.0:
-					color_data.append_array(frame_data.slice(idx - 3, idx + 1))
+					color_data.append_array(frame_data.slice(idx, idx + 4))
 					pos_data.append_array([
-						(((idx - 3) / 4) % int(region_size.x)), (((idx - 3) / 4) / region_size.x), 0, 255
+						(idx / 4) % region_size.x, (idx / 4) / region_size.x, 0, 255
 					])
-			
 		
 			pixel_count = pos_data.size()
 			color_array.append(color_data)
@@ -70,23 +70,20 @@ func create_images() -> void:
 	#Fill the shorter arrays with 0s, to match the texture width
 	#Then create the image
 	var raw_data : PackedByteArray = []
-	for arr in color_array:
-		arr.resize(longest_frame)
-		raw_data.append_array(arr)
-	
+	var raw_data_pos : PackedByteArray = []
+	for i in color_array.size():
+		color_array[i].resize(longest_frame)
+		pos_array[i].resize(longest_frame)
+		raw_data.append_array(color_array[i])
+		raw_data_pos.append_array(pos_array[i])
+		
 	var output_image : Image = Image.create_from_data(longest_frame / 4, h_frames * v_frames, false, Image.FORMAT_RGBA8, raw_data)
 	color_texture = ImageTexture.create_from_image(output_image)
-
-	color_texture_rect.texture = color_texture
-	#Do the same for position values
-	raw_data = []
-	for arr in pos_array:
-		arr.resize(longest_frame)
-		raw_data.append_array(arr)
 	
-	output_image = Image.create_from_data(longest_frame / 4, h_frames * v_frames, false, Image.FORMAT_RGBA8, raw_data)
+	output_image = Image.create_from_data(longest_frame / 4, h_frames * v_frames, false, Image.FORMAT_RGBA8, raw_data_pos)
 	position_texture = ImageTexture.create_from_image(output_image)
 
+	color_texture_rect.texture = color_texture
 	position_texture_rect.texture = position_texture
 	
 	save_color.disabled = false
